@@ -1,13 +1,19 @@
 import React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Player } from '../interfaces/user.interface';
 import './style.scss'
-import Addplayer from './Addplayer'
-import Scores from './Scores'
-import Players from './Players'
 
-export default function Scoreboard() {
+export default function Scoreboard () {
 
-  const [doList, setDoList] = useState([
+  useEffect(() => {
+    const storeDoList = localStorage.getItem('doList');
+
+    if (storeDoList) {
+      setDoList(JSON.parse(storeDoList));
+    }
+  }, []);
+
+  const [doList, setDoList] = useState<Player[]>([
     {
       id: Date.now() * Math.random(),
       title: "Long Lung Linh",
@@ -28,24 +34,26 @@ export default function Scoreboard() {
     }
   ])
 
-  function addList(e: any) {
+  function addPlayer(e: any) {
     e.preventDefault();
     if (e.target.title.value == "") {
-      console.log("Xin hãy nhập vào");
+      console.log("Xin đừng để trống");
+      alert("Xin đừng để trống");
       return
     }
 
-    let newDo = {
+    let newDo: Player = {
       id: Date.now() * Math.random(),
       title: e.target.title.value,
       status: false,
       score: 0
     }
     setDoList([newDo, ...doList]);
+
     e.target.title.value = '';
   }
 
-  function deleteDo(doId : any, index: any) {
+  function deletePlayer(doId: number) {
     setDoList(doList.filter(doItemFilter => doItemFilter.id != doId))
   }
 
@@ -53,62 +61,126 @@ export default function Scoreboard() {
 
   if (doList.length == 0) {
     setTimeout(() => {
-      alert("Bạn đã xóa hết người chơi!")
+      console.log("Bạn đã xóa hết người chơi!");
+      alert("Bạn đã xóa hết người chơi!");
     }, 500)
   }
 
-  function increaseCount(doId: any) {
+  function increaseCount(doId: number) {
     const updateList = doList.map((doItem) => {
-      if (doItem.id === doId && doItem.score < 10) {
+      
+      if (doItem.id == doId && doItem.score < 10) {
         return { ...doItem, score: doItem.score + 1 };
       }
       return doItem;
+
     });
+
     setDoList(updateList);
   }
 
-  function decreaseCount(doId: any) {
+  function decreaseCount(doId: number) {
     const updateList = doList.map((doItem) => {
-      if (doItem.id === doId && doItem.score > 0) {
+
+      if (doItem.id == doId && doItem.score > 0) {
         console.log(doItem);
         return { ...doItem, score: doItem.score - 1 };
       }
 
       return doItem;
     });
+
     setDoList(updateList);
   }
 
   const highestScore = Math.max(...doList.map((doItem) => doItem.score));
-  // console.log("highestScore",highestScore);
-  function isHighestScore(highest: any) {
-    return highest > 0 && highest === highestScore;
+  function isHighestScore(highest: number) {
+    return highest > 0 && highest == highestScore;
   }
 
   const totalScore = doList.reduce((acc, doItem) => acc + doItem.score, 0);
-  // console.log("totalScore",totalScore);
+
+
+  useEffect(() => {
+    localStorage.setItem('doList', JSON.stringify(doList));
+  }, [doList]);
 
   return (
     <div className='container'>
 
-{/* ==============Scores=================== */}
+      {/* ==============Scores=================== */}
       <div className='scores'>
-            <div>
-                <div className='player'>
-                    <span>Players: </span>
-                    <span className='player_number'>{doList.length}</span>
-                </div>
+        <div>
+          <div className='player'>
+            <span>Players: </span>
+            <span className='player_number'>{doList.length}</span>
+          </div>
 
-                <div className='point'>
-                    <span>Total Points: </span>
-                    <span className='point_number'>{totalScore}</span>
-                </div>
-            </div>
-
-            <h1>Bảng điểm</h1>
+          <div className='point'>
+            <span>Total Points: </span>
+            <span className='point_number'>{totalScore}</span>
+          </div>
         </div>
 
+        <h1>Bảng điểm</h1>
+      </div>
 
+      {/* ==============Players=================== */}
+      <div className='players'>
+        <ul>
+          {
+            doList.map((doItem, index) => (
+              <li key={doItem.id}>
+                <div className='li_1'>
+                  <button className='btn_delete' onClick={() => {
+                    deletePlayer(doItem.id)
+                  }}>
+                    <i className="fa-solid fa-x"></i>
+                  </button>
+
+                  <i className="fa-solid fa-crown"
+                    style={{
+                      opacity: isHighestScore(doItem.score) ? 0.6 : 0.08,
+                      transitionDelay: isHighestScore(doItem.score) ? '0.5s' : ''
+                    }}
+                  ></i>
+
+                  <span>{doItem.title}</span>
+                </div>
+
+                <div className='li_2'>
+                  <div>
+                    <button className='btn_decrease' onClick={() =>
+                      decreaseCount(doItem.id)
+                    }>
+                      <i className="fa-solid fa-minus"></i>
+                    </button>
+                  </div>
+
+                  <span>{doItem.score}</span>
+
+                  <button className='btn_increase' onClick={() =>
+                    increaseCount(doItem.id)
+                  }>
+                    <i className="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </li>
+
+            ))
+          }
+        </ul>
+      </div>
+
+      {/* ==============Addplayer=================== */}
+      <div className='add_player'>
+            <form className='form_input' onSubmit={(e) => {
+                addPlayer(e)
+            }}>
+                <input name='title' type="text" placeholder="Enter a player's name" />
+                <button>ADD PLAYER</button>
+            </form>
+        </div>
 
     </div>
   )
